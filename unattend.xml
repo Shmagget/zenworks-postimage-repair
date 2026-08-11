@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ZENworks Sysprep unattend.xml (Windows 10 / 11, 64-bit)
+
+  Place on the master as:
+    C:\Windows\System32\Sysprep\unattend.xml
+
+  Then run:
+    %WINDIR%\System32\Sysprep\sysprep.exe /generalize /oobe /shutdown /unattend:C:\Windows\System32\Sysprep\unattend.xml
+
+  After Sysprep shuts down, boot ZENworks imaging and:
+    img makep 10.30.40.200 name-of-image.zmg
+
+  Edit the marked TODO values (timezone, org name, product key) before use.
+-->
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+  <settings pass="generalize">
+    <component name="Microsoft-Windows-Security-SPP"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <!-- Keep reactivation graceful after generalize -->
+      <SkipRearm>1</SkipRearm>
+    </component>
+
+    <component name="Microsoft-Windows-PnpSysprep"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <!--
+        false = strip device-specific driver state (better across different Lenovo models)
+        true  = keep installed drivers (better when master and targets are the SAME model)
+      -->
+      <PersistAllDeviceInstalls>false</PersistAllDeviceInstalls>
+      <DoNotCleanUpNonPresentDevices>false</DoNotCleanUpNonPresentDevices>
+    </component>
+  </settings>
+
+  <settings pass="specialize">
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <!-- * = Windows generates a unique computer name -->
+      <ComputerName>*</ComputerName>
+      <!-- TODO: change if you want a different org label -->
+      <RegisteredOrganization>IT Imaging</RegisteredOrganization>
+      <RegisteredOwner>IT</RegisteredOwner>
+      <!-- TODO: Eastern Standard Time for OH / Kent; change if needed -->
+      <TimeZone>Eastern Standard Time</TimeZone>
+      <CopyProfile>false</CopyProfile>
+    </component>
+
+    <component name="Microsoft-Windows-Deployment"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <RunSynchronous>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Description>Enable local Administrator account</Description>
+          <Path>net user Administrator /active:yes</Path>
+        </RunSynchronousCommand>
+      </RunSynchronous>
+    </component>
+
+    <component name="Microsoft-Windows-UnattendedJoin"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <!-- Leave workgroup; join domain later with ZENworks / GPO / script -->
+      <Identification>
+        <JoinWorkgroup>WORKGROUP</JoinWorkgroup>
+      </Identification>
+    </component>
+  </settings>
+
+  <settings pass="oobeSystem">
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <OOBE>
+        <HideEULAPage>true</HideEULAPage>
+        <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+        <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+        <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+        <HideLocalAccountScreen>true</HideLocalAccountScreen>
+        <ProtectYourPC>3</ProtectYourPC>
+        <SkipMachineOOBE>true</SkipMachineOOBE>
+        <SkipUserOOBE>true</SkipUserOOBE>
+      </OOBE>
+
+      <UserAccounts>
+        <AdministratorPassword>
+          <!--
+            TODO: set a real local Administrator password.
+            PlainText true is fine inside a closed imaging workflow; change after deploy if needed.
+          -->
+          <Value>ChangeMe123!</Value>
+          <PlainText>true</PlainText>
+        </AdministratorPassword>
+        <LocalAccounts>
+          <LocalAccount wcm:action="add">
+            <Name>ImagingAdmin</Name>
+            <Group>Administrators</Group>
+            <DisplayName>Imaging Admin</DisplayName>
+            <Description>Temporary local admin for imaged PCs</Description>
+            <Password>
+              <Value>ChangeMe123!</Value>
+              <PlainText>true</PlainText>
+            </Password>
+          </LocalAccount>
+        </LocalAccounts>
+      </UserAccounts>
+
+      <!-- Optional: auto-logon once so first-boot scripts can finish -->
+      <AutoLogon>
+        <Enabled>true</Enabled>
+        <Username>ImagingAdmin</Username>
+        <Password>
+          <Value>ChangeMe123!</Value>
+          <PlainText>true</PlainText>
+        </Password>
+        <LogonCount>1</LogonCount>
+      </AutoLogon>
+    </component>
+
+    <component name="Microsoft-Windows-International-Core"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <InputLocale>en-US</InputLocale>
+      <SystemLocale>en-US</SystemLocale>
+      <UILanguage>en-US</UILanguage>
+      <UserLocale>en-US</UserLocale>
+    </component>
+  </settings>
+
+  <cpi:offlineImage cpi:source="catalog://"
+                    xmlns:cpi="urn:schemas-microsoft-com:cpi" />
+</unattend>
